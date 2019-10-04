@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "baseUrl": "src",
+    "jsx": "react",
+    "jsxFactory": "h",
+    "lib": ["dom", "esnext"],
+    "module": "esnext",
+    "outDir": "./build",
+    "rootDir": "src",
+    "target": "esnext",
+    "sourceMap": true,
+    "typeRoots": ["./node_modules/@types"],
+    "allowJs": true
+  },
+  "exclude": ["node_modules/**/*", "src/**/*.spec.*"],
+  "include": ["src/**/*"]
+}

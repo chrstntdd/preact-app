@@ -1,0 +1,453 @@
+diff --git a/node_modules/wouter-preact/index.js b/node_modules/wouter-preact/index.js
+index f9af5f6..b1bf63f 100644
+--- a/node_modules/wouter-preact/index.js
++++ b/node_modules/wouter-preact/index.js
+@@ -1,7 +1,7 @@
+-import locationHook from "./use-location.js";
+-import makeMatcher from "./matcher.js";
++const locationHook = require('./use-location')
++const makeMatcher = require('./matcher')
+ 
+-import {
++const {
+   useRef,
+   useEffect,
+   useContext,
+@@ -9,8 +9,8 @@ import {
+   createContext,
+   isValidElement,
+   cloneElement,
+-  createElement as h
+-} from "./react-deps.js";
++  h
++} = require('./react-deps')
+ 
+ /*
+  * Part 1, Hooks API: useRouter, useRoute and useLocation
+@@ -20,113 +20,107 @@ import {
+ // when no value is provided — default object is used.
+ // allows us to use the router context as a global ref to store
+ // the implicitly created router (see `useRouter` below)
+-const RouterCtx = createContext({});
++const RouterCtx = createContext({})
+ 
+ const buildRouter = (options = {}) => {
+   return {
+     hook: options.hook || locationHook,
+     matcher: options.matcher || makeMatcher()
+-  };
+-};
++  }
++}
+ 
+-export const useRouter = () => {
+-  const globalRef = useContext(RouterCtx);
++const useRouter = () => {
++  const globalRef = useContext(RouterCtx)
+ 
+   // either obtain the router from the outer context (provided by the
+   // `<Router /> component) or create an implicit one on demand.
+-  return globalRef.v || (globalRef.v = buildRouter());
+-};
++  return globalRef.v || (globalRef.v = buildRouter())
++}
+ 
+-export const useLocation = () => {
+-  const router = useRouter();
+-  return router.hook(router);
+-};
++const useLocation = () => {
++  const router = useRouter()
++  return router.hook(router)
++}
+ 
+-export const useRoute = pattern => {
+-  const router = useRouter();
+-  const [path] = useLocation();
++const useRoute = pattern => {
++  const router = useRouter()
++  const [path] = useLocation()
+ 
+-  return router.matcher(pattern, path);
+-};
++  return router.matcher(pattern, path)
++}
+ 
+ /*
+  * Part 2, Low Carb Router API: Router, Route, Link, Switch
+  */
+ 
+-export const Router = props => {
+-  const ref = useRef(null);
++const Router = props => {
++  const ref = useRef(null)
+ 
+   // this little trick allows to avoid having unnecessary
+   // calls to potentially expensive `buildRouter` method.
+   // https://reactjs.org/docs/hooks-faq.html#how-to-create-expensive-objects-lazily
+-  const value = ref.current || (ref.current = { v: buildRouter(props) });
++  const value = ref.current || (ref.current = { v: buildRouter(props) })
+ 
+   return h(RouterCtx.Provider, {
+     value: value,
+     children: props.children
+-  });
+-};
++  })
++}
+ 
+-export const Route = ({ path, match, component, children }) => {
+-  const useRouteMatch = useRoute(path);
++const Route = ({ path, match, component, children }) => {
++  const useRouteMatch = useRoute(path)
+ 
+   // `props.match` is present - Route is controlled by the Switch
+-  const [matches, params] = match || useRouteMatch;
++  const [matches, params] = match || useRouteMatch
+ 
+-  if (!matches) return null;
++  if (!matches) return null
+ 
+   // React-Router style `component` prop
+-  if (component) return h(component, { params: params });
++  if (component) return h(component, { params: params })
+ 
+   // support render prop or plain children
+-  return typeof children === "function" ? children(params) : children;
+-};
++  return typeof children === 'function' ? children(params) : children
++}
+ 
+-export const Link = props => {
+-  const [, navigate] = useLocation();
++const Link = props => {
++  const [, navigate] = useLocation()
+ 
+-  const href = props.href || props.to;
+-  const { children, onClick } = props;
++  const href = props.href || props.to
++  const { children, onClick } = props
+ 
+   const handleClick = useCallback(
+     event => {
+       // ignores the navigation when clicked using right mouse button or
+       // by holding a special modifier key: ctrl, command, win, alt, shift
+-      if (
+-        event.ctrlKey ||
+-        event.metaKey ||
+-        event.altKey ||
+-        event.shiftKey ||
+-        event.button !== 0
+-      )
+-        return;
+-
+-      event.preventDefault();
+-      navigate(href);
+-      onClick && onClick(event);
++      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.button !== 0)
++        return
++
++      event.preventDefault()
++      navigate(href)
++      onClick && onClick(event)
+     },
+     [href, onClick, navigate]
+-  );
++  )
+ 
+   // wraps children in `a` if needed
+-  const extraProps = { href, onClick: handleClick, to: null };
+-  const jsx = isValidElement(children) ? children : h("a", props);
++  const extraProps = { href, onClick: handleClick, to: null }
++  const jsx = isValidElement(children) ? children : h('a', props)
+ 
+-  return cloneElement(jsx, extraProps);
+-};
++  return cloneElement(jsx, extraProps)
++}
+ 
+-export const Switch = ({ children, location }) => {
+-  const { matcher } = useRouter();
+-  const [originalLocation] = useLocation();
++const Switch = ({ children, location }) => {
++  const { matcher } = useRouter()
++  const [originalLocation] = useLocation()
+ 
+   // make sure the `children` prop is always an array
+   // this is a bit hacky, because it returns [[]], in
+   // case of an empty array, but this case should be
+   // properly handled below in the loop.
+-  children = children && children.length ? children : [children];
++  children = children && children.length ? children : [children]
+ 
+   for (const element of children) {
+-    let match = 0;
++    let match = 0
+ 
+     if (
+       isValidElement(element) &&
+@@ -137,22 +131,32 @@ export const Switch = ({ children, location }) => {
+       element.props.path &&
+       (match = matcher(element.props.path, location || originalLocation))[0]
+     )
+-      return cloneElement(element, { match });
++      return cloneElement(element, { match })
+   }
+ 
+-  return null;
+-};
++  return null
++}
+ 
+-export const Redirect = props => {
+-  const [, push] = useLocation();
++const Redirect = props => {
++  const [, push] = useLocation()
+   useEffect(() => {
+-    push(props.href || props.to);
++    push(props.href || props.to)
+ 
+     // we pass an empty array of dependecies to ensure that
+     // we only run the effect once after initial render
+-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+-
+-  return null;
+-};
+-
+-export default useRoute;
++  }, []) // eslint-disable-line react-hooks/exhaustive-deps
++
++  return null
++}
++
++module.exports = {
++  Link,
++  Redirect,
++  Route,
++  Router,
++  Switch,
++  useLocation,
++  useRoute,
++  useRoute,
++  useRouter
++}
+diff --git a/node_modules/wouter-preact/matcher.js b/node_modules/wouter-preact/matcher.js
+index 3daf188..0f004d4 100644
+--- a/node_modules/wouter-preact/matcher.js
++++ b/node_modules/wouter-preact/matcher.js
+@@ -1,66 +1,65 @@
+ // creates a matcher function
+-export default function makeMatcher(makeRegexpFn = pathToRegexp) {
+-  let cache = {};
++module.exports = function makeMatcher(makeRegexpFn = pathToRegexp) {
++  let cache = {}
+ 
+   // obtains a cached regexp version of the pattern
+-  const getRegexp = pattern =>
+-    (cache[pattern]) || (cache[pattern] = makeRegexpFn(pattern));
++  const getRegexp = pattern => cache[pattern] || (cache[pattern] = makeRegexpFn(pattern))
+ 
+   return (pattern, path) => {
+-    const { regexp, keys } = getRegexp(pattern || "");
+-    const out = regexp.exec(path);
++    const { regexp, keys } = getRegexp(pattern || '')
++    const out = regexp.exec(path)
+ 
+-    if (!out) return [false, null];
++    if (!out) return [false, null]
+ 
+     // formats an object with matched params
+     const params = keys.reduce((params, key, i) => {
+-      params[key.name] = out[i + 1];
+-      return params;
+-    }, {});
++      params[key.name] = out[i + 1]
++      return params
++    }, {})
+ 
+-    return [true, params];
+-  };
++    return [true, params]
++  }
+ }
+ 
+ // escapes a regexp string (borrowed from path-to-regexp sources)
+ // https://github.com/pillarjs/path-to-regexp/blob/v3.0.0/index.js#L202
+-const escapeRx = str => str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
++const escapeRx = str => str.replace(/([.+*?=^!:${}()[\]|/\\])/g, '\\$1')
+ 
+ // returns a segment representation in RegExp based on flags
+ // adapted and simplified version from path-to-regexp sources
+ const rxForSegment = (repeat, optional, prefix) => {
+-  let capture = repeat ? "((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*)" : "([^\\/]+?)";
+-  if (optional && prefix) capture = "(?:\\/" + capture + ")";
+-  return capture + (optional ? "?" : "");
+-};
++  let capture = repeat ? '((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*)' : '([^\\/]+?)'
++  if (optional && prefix) capture = '(?:\\/' + capture + ')'
++  return capture + (optional ? '?' : '')
++}
+ 
+ const pathToRegexp = pattern => {
+-  const groupRx = /:([A-Za-z0-9_]+)([?+*]?)/g;
++  const groupRx = /:([A-Za-z0-9_]+)([?+*]?)/g
+ 
+   let match = null,
+     lastIndex = 0,
+     keys = [],
+-    result = "";
++    result = ''
+ 
+   while ((match = groupRx.exec(pattern)) !== null) {
+-    const [_, segment, mod] = match;
++    const [_, segment, mod] = match
+ 
+     // :foo  [1]      (  )
+     // :foo? [0 - 1]  ( o)
+     // :foo+ [1 - ∞]  (r )
+     // :foo* [0 - ∞]  (ro)
+-    const repeat = mod === "+" || mod === "*";
+-    const optional = mod === "?" || mod === "*";
+-    const prefix = optional && pattern[match.index - 1] === "/" ? 1 : 0;
++    const repeat = mod === '+' || mod === '*'
++    const optional = mod === '?' || mod === '*'
++    const prefix = optional && pattern[match.index - 1] === '/' ? 1 : 0
+ 
+-    const prev = pattern.substring(lastIndex, match.index - prefix);
++    const prev = pattern.substring(lastIndex, match.index - prefix)
+ 
+-    keys.push({ name: segment });
+-    lastIndex = groupRx.lastIndex;
++    keys.push({ name: segment })
++    lastIndex = groupRx.lastIndex
+ 
+-    result += escapeRx(prev) + rxForSegment(repeat, optional, prefix);
++    result += escapeRx(prev) + rxForSegment(repeat, optional, prefix)
+   }
+ 
+-  result += escapeRx(pattern.substring(lastIndex));
+-  return { keys, regexp: new RegExp("^" + result + "(?:\\/)?$", "i") };
+-};
++  result += escapeRx(pattern.substring(lastIndex))
++  return { keys, regexp: new RegExp('^' + result + '(?:\\/)?$', 'i') }
++}
+diff --git a/node_modules/wouter-preact/react-deps.js b/node_modules/wouter-preact/react-deps.js
+index 6d238f2..611ea10 100644
+--- a/node_modules/wouter-preact/react-deps.js
++++ b/node_modules/wouter-preact/react-deps.js
+@@ -1,9 +1,15 @@
+-export { createContext, cloneElement, createElement } from "preact";
+-export { isValidElement } from "preact/compat";
+-export {
++const { createContext, cloneElement, createElement } = require('preact')
++const { isValidElement } = require('preact/compat')
++const { useRef, useEffect, useState, useContext, useCallback } = require('preact/hooks')
++
++module.exports = {
+   useRef,
+   useEffect,
+   useState,
+   useContext,
+-  useCallback
+-} from "preact/hooks";
++  useCallback,
++  h: createElement,
++  cloneElement,
++  createContext,
++  isValidElement
++}
+diff --git a/node_modules/wouter-preact/static-location.js b/node_modules/wouter-preact/static-location.js
+index be8a6c8..3d7627d 100644
+--- a/node_modules/wouter-preact/static-location.js
++++ b/node_modules/wouter-preact/static-location.js
+@@ -1,4 +1,4 @@
+ // Generates static `useLocation` hook. The hook always
+ // responds with initial path provided.
+ // You can use this for server-side rendering.
+-module.exports = (path = "/") => () => [path, x => x];
++module.exports = (path = '/') => () => [path, x => x]
+diff --git a/node_modules/wouter-preact/use-location.js b/node_modules/wouter-preact/use-location.js
+index 5c501fc..1c4ee59 100644
+--- a/node_modules/wouter-preact/use-location.js
++++ b/node_modules/wouter-preact/use-location.js
+@@ -1,17 +1,17 @@
+-import { useEffect, useState, useCallback } from "./react-deps.js";
++const { useEffect, useState, useCallback } = require('./react-deps.js')
+ 
+-export default () => {
+-  const [path, update] = useState(location.pathname);
++module.exports = () => {
++  const [path, update] = useState(location.pathname)
+ 
+   useEffect(() => {
+-    patchHistoryEvents();
++    patchHistoryEvents()
+ 
+-    const events = ["popstate", "pushState", "replaceState"];
+-    const handler = () => update(location.pathname);
++    const events = ['popstate', 'pushState', 'replaceState']
++    const handler = () => update(location.pathname)
+ 
+-    events.map(e => addEventListener(e, handler));
+-    return () => events.map(e => removeEventListener(e, handler));
+-  }, []);
++    events.map(e => addEventListener(e, handler))
++    return () => events.map(e => removeEventListener(e, handler))
++  }, [])
+ 
+   // the 2nd argument of the `useLocation` return value is a function
+   // that allows to perform a navigation.
+@@ -19,12 +19,12 @@ export default () => {
+   // the function reference should stay the same between re-renders, so that
+   // it can be passed down as an element prop without any performance concerns.
+   const navigate = useCallback(
+-    (to, replace) => history[replace ? "replaceState" : "pushState"](0, 0, to),
++    (to, replace) => history[replace ? 'replaceState' : 'pushState'](0, 0, to),
+     []
+-  );
++  )
+ 
+-  return [path, navigate];
+-};
++  return [path, navigate]
++}
+ 
+ // While History API does have `popstate` event, the only
+ // proper way to listen to changes via `push/replaceState`
+@@ -32,23 +32,22 @@ export default () => {
+ //
+ // See https://stackoverflow.com/a/4585031
+ 
+-let patched = 0;
++let patched = 0
+ 
+ const patchHistoryEvents = () => {
+-  if (patched) return;
+-
+-  ["pushState", "replaceState"].map(type => {
+-    const original = history[type];
++  if (patched) return
++  ;['pushState', 'replaceState'].map(type => {
++    const original = history[type]
+ 
+     history[type] = function() {
+-      const result = original.apply(this, arguments);
+-      const event = new Event(type);
+-      event.arguments = arguments;
++      const result = original.apply(this, arguments)
++      const event = new Event(type)
++      event.arguments = arguments
+ 
+-      dispatchEvent(event);
+-      return result;
+-    };
+-  });
++      dispatchEvent(event)
++      return result
++    }
++  })
+ 
+-  return (patched = 1);
+-};
++  return (patched = 1)
++}
