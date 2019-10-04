@@ -41,7 +41,7 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
   await Promise.all([removeOldFiles(CLIENT_LIB), removeOldFiles(BUILD_DIRECTORY)])
 
   // Bundle with rollup
-  spawn('yarn', ['build'], { stdio: 'inherit' })
+  spawn('yarn', ['build:rollup'], { stdio: 'inherit' })
 
   for (let { name } of walkSync(SOURCE_DIRECTORY, WALK_OPTS)) {
     let compiledCode, finalSourceMap

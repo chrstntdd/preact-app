@@ -4,9 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "NODE_ENV='development' rollup -c rollup.config.js",
-    "build:prod-test": "NODE_ENV='production' node -r esm -r ts-node/register/transpile-only build.ts && NODE_ENV='production' node ./build/server.js",
     "build:prod": "node -r esm -r ts-node/register/transpile-only build.ts",
+    "build:check": "yarn build:prod && yarn run:server",
+    "build:rollup": "NODE_ENV='development' rollup -c rollup.config.js",
+    "run:server": "NODE_ENV='production' node ./build/server.js",
     "postinstall": "patch-package"
   },
   "dependencies": {

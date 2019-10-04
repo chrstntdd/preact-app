@@ -1,36 +1,12 @@
-import path from 'path'
-
-import { walkSync } from '@chrstntdd/node'
+import { readFileSync } from 'fs'
 
 import { CLIENT_LIB } from './paths'
-
-// Match main.asdf123.js in production mode or bundle.js in dev mode
-const mainBundleRegex = /\main-\w+.mjs$/
-
-let jsBundles: Set<string> = new Set([])
-let cssFiles: string[] = []
-
-try {
-  for (const { name } of walkSync(CLIENT_LIB, {
-    filter: fileName => fileName.endsWith('.mjs')
-  })) {
-    const relativePath = path.relative(process.cwd(), name)
-
-    if (name.endsWith('.mjs')) {
-      jsBundles.add(relativePath.replace('lib/', ''))
-    }
-  }
-} catch (error) {
-  console.log(error)
-}
 
 export const createScriptTag = (src: string) =>
   src ? `<script type="module" src="${src}"></script>` : ''
 
 export const createLinkTag = (href: string) =>
   href ? `<link rel="stylesheet" href="${href}" />` : ''
-
-const mainBundle = [...jsBundles].find(b => mainBundleRegex.test(b))
 
 const getHeader = () => {
   return `<!DOCTYPE html>
@@ -62,15 +38,17 @@ const getHeader = () => {
           color: #444;
         }
       </style>
-      ${cssFiles.map(href => createLinkTag(href))}
     </head>
     <body>
       <div id="root">`
 }
 
+let MANIFEST
+
 const getFooter = (bundles?: string[]) => {
+  MANIFEST = MANIFEST || JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
   return `</div>
-    ${createScriptTag(mainBundle)}
+    ${createScriptTag(MANIFEST.main)}
     ${bundles && bundles.length ? bundles.map(b => createScriptTag(b)).join('\n') : ''}
     </body>
   </html>
