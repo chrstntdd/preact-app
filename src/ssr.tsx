@@ -5,7 +5,7 @@ import { Router } from 'wouter-preact'
 
 import staticLocationHook from 'wouter-preact/static-location'
 
-import { getHeader, getFooter } from './html-template'
+import { makeHeader, makeFooter } from './html-template'
 import { App } from './App'
 
 const renderer = (req: Request, res: Response) => {
@@ -15,9 +15,8 @@ const renderer = (req: Request, res: Response) => {
         <App />
       </Router>
     )
-    const all = getHeader() + body + getFooter()
 
-    res.send(all)
+    res.status(200).send(makeHeader() + body + makeFooter())
   } catch (error) {
     throw error
   }

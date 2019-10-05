@@ -2,13 +2,9 @@ import { readFileSync } from 'fs'
 
 import { CLIENT_LIB } from './paths'
 
-export const createScriptTag = (src: string) =>
-  src ? `<script type="module" src="${src}"></script>` : ''
+const createScriptTag = (src: string) => `<script type="module" src="${src}"></script>`
 
-export const createLinkTag = (href: string) =>
-  href ? `<link rel="stylesheet" href="${href}" />` : ''
-
-const getHeader = () => {
+const makeHeader = () => {
   return `<!DOCTYPE html>
   <html>
     <head>
@@ -45,14 +41,13 @@ const getHeader = () => {
 
 let MANIFEST
 
-const getFooter = (bundles?: string[]) => {
+const makeFooter = () => {
   MANIFEST = MANIFEST || JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
   return `</div>
     ${createScriptTag(MANIFEST.main)}
-    ${bundles && bundles.length ? bundles.map(b => createScriptTag(b)).join('\n') : ''}
     </body>
   </html>
   `
 }
 
-export { getHeader, getFooter }
+export { makeHeader, makeFooter }
