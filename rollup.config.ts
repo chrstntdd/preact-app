@@ -1,5 +1,4 @@
-import path from 'path'
-import {} from 'rollup'
+import path, { resolve } from 'path'
 
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
@@ -9,6 +8,8 @@ import { terser } from 'rollup-plugin-terser'
 import progress from 'rollup-plugin-progress'
 
 const mainBabelConfig = require('./.babelrc.js')
+
+const BROWSER_ENTRY = resolve(__dirname, './src/client/browser.tsx')
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 
@@ -108,7 +109,7 @@ function basePlugins({ nomodule = false } = {}) {
 // Module config for <script type="module">
 const moduleConfig = {
   input: {
-    main: 'src/browser.tsx'
+    main: BROWSER_ENTRY
   },
   output: {
     dir: './lib',
@@ -152,7 +153,7 @@ const moduleConfig = {
 // Legacy config for <script nomodule>
 const nomoduleConfig = {
   input: {
-    nomodule: 'src/browser.tsx'
+    nomodule: BROWSER_ENTRY
   },
   output: {
     dir: './lib',

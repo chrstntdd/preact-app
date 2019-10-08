@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "~/*": ["./*"]
+    },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "baseUrl": "src",
     "jsx": "react",
     "jsxFactory": "h",
     "lib": ["dom", "esnext"],

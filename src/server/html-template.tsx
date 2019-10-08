@@ -1,14 +1,16 @@
 import { readFileSync } from 'fs'
 
-import { CLIENT_LIB } from './paths'
+import { CLIENT_LIB } from '../paths'
 
-const createScriptTag = (src: string) => `<script type="module" src="${src}"></script>`
+const createScriptTag = (src: string) =>
+  `<script type="module" src="${src}"></script>`
 
 const makeHeader = () => {
   return `<!DOCTYPE html>
   <html>
     <head>
       <meta charset="utf-8" />
+      <link rel="icon" href="data:,">
       <meta http-equiv="X-UA-Compatible" content="IE=edge" />
       <title>SSR!</title>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,7 +44,8 @@ const makeHeader = () => {
 let MANIFEST
 
 const makeFooter = () => {
-  MANIFEST = MANIFEST || JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
+  MANIFEST =
+    MANIFEST || JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
   return `</div>
     ${createScriptTag(MANIFEST.main)}
     </body>
