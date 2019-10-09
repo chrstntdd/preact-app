@@ -705,6 +705,11 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
+"@chrstntdd/common@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@chrstntdd/common/-/common-0.0.1.tgz#e366d37f3526824af22952ee05ba23ee96f1b162"
+  integrity sha512-VWbatuCJlaqlZYdLzWNh1LSkomO+YktshKCvnXWqPLNhVT14cMaf88V2TiWRcUe4The7X1w5tzdVPxxW6WHHEQ==
+
 "@chrstntdd/node@^0.0.3":
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/@chrstntdd/node/-/node-0.0.3.tgz#1a2879fbe077007a44ce696eccd7d510edae87fc"
@@ -3400,6 +3405,11 @@ typescript@^3.7.0-dev.20191006:
   version "3.7.0-dev.20191008"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.0-dev.20191008.tgz#45f29daf2c95b4a1e84f094b158766f97eebafc1"
   integrity sha512-6Q9Tk1+5DvAKdIpjLNDDEJszYcDsaagykZtE+INTwGydt0fPffrB+M6/TDWPu/iDASjWLDw3HBC02/bEyFK1aw==
+
+ua-parser-js@^0.7.20:
+  version "0.7.20"
+  resolved "https://registry.yarnpkg.com/ua-parser-js/-/ua-parser-js-0.7.20.tgz#7527178b82f6a62a0f243d1f94fd30e3e3c21098"
+  integrity sha512-8OaIKfzL5cpx8eCMAhhvTlft8GYF8b2eQr6JkCyVdrgjcytyOmPCXrqXFcUnhonRpLlh5yxEZVohm6mzaowUOw==
 
 unicode-canonical-property-names-ecmascript@^1.0.4:
   version "1.0.4"

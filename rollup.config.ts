@@ -1,11 +1,39 @@
+import Rollup from 'rollup'
 import path, { resolve } from 'path'
+import { brotliCompressSync, gzipSync } from 'zlib'
 
+import { filterSync } from '@chrstntdd/common'
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
 import nodeResolve from 'rollup-plugin-node-resolve'
 import replace from 'rollup-plugin-replace'
 import { terser } from 'rollup-plugin-terser'
 import progress from 'rollup-plugin-progress'
+
+function compressionPlugin() {
+  return {
+    name: 'rollup-compression-plugin',
+    generateBundle(options, bundle) {
+      for (const [name, assetInfo] of filterSync(
+        Object.entries(bundle),
+        ([name]) => /\.(ts|mjs)x?$/.test(name)
+      )) {
+        const bufContent = Buffer.from(assetInfo.code, 'utf-8')
+
+        this.emitFile({
+          type: 'asset',
+          fileName: `${name}.br`,
+          source: brotliCompressSync(bufContent)
+        })
+        this.emitFile({
+          type: 'asset',
+          fileName: `${name}.gz`,
+          source: gzipSync(bufContent)
+        })
+      }
+    }
+  }
+}
 
 const mainBabelConfig = require('./.babelrc.js')
 
@@ -101,24 +129,26 @@ function basePlugins({ nomodule = false } = {}) {
   if (process.env.NODE_ENV === 'production') {
     // TODO: enable if actually deploying this to production, but I have
     // minification off for now so it's easier to view the demo source.
-    plugins.push(terser({ module: !nomodule }))
+    plugins.push(terser({ module: !nomodule, compress: true }))
   }
   return plugins
 }
 
 // Module config for <script type="module">
+/** @type Rollup.RollupOptions */
 const moduleConfig = {
   input: {
-    main: BROWSER_ENTRY
+    main: BROWSER_ENTRY,
+    ...(IS_DEVELOPMENT && { 'preact-devtools': 'preact/debug' })
   },
   output: {
     dir: './lib',
     format: 'esm',
     entryFileNames: '[name]-[hash].mjs',
-    chunkFileNames: '[name]-[hash].mjs',
-    dynamicImportFunction: '__import__'
+    chunkFileNames: '[name]-[hash].mjs'
+    // dynamicImportFunction: '__import__'
   },
-  plugins: [...basePlugins(), modulepreloadPlugin()],
+  plugins: [...basePlugins(), modulepreloadPlugin(), compressionPlugin()],
   manualChunks(id) {
     if (id.includes('node_modules')) {
       // The directory name following the last `node_modules`.
@@ -164,7 +194,7 @@ const nomoduleConfig = {
       react: 'React'
     }
   },
-  plugins: basePlugins({ nomodule: true }),
+  plugins: [...basePlugins({ nomodule: true }), compressionPlugin()],
   external: EXTERNALS,
   inlineDynamicImports: true,
   watch: {
@@ -173,6 +203,7 @@ const nomoduleConfig = {
 }
 
 const configs = [moduleConfig]
+
 if (process.env.NODE_ENV === 'production') {
   configs.push(nomoduleConfig)
 }

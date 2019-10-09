@@ -33,7 +33,7 @@ const SOURCE_EXT = /\.(ts|mjs)x?$/,
       )
   },
   DEFAULT_CONFIG: BuildConfig = {
-    compiler: 'babel',
+    compiler: 'sucrase',
     moduleTarget: 'cjs'
   },
   IS_PRODUCTION = process.env.NODE_ENV === 'production'
@@ -84,33 +84,6 @@ let makeSecureKeys = (dirWithKeys: string, name: string) => {
   })
 }
 
-let compileFrontEnd = () => {
-  spawn.sync('yarn', ['build:rollup'], { stdio: 'inherit' })
-
-  // Minify & compress FE static assets
-  for (let { name } of walkSync(CLIENT_LIB, WALK_OPTS)) {
-    let content = readFileSync(name, 'UTF-8')
-
-    const { code, error } = minify(content)
-
-    if (error) {
-      throw error
-    }
-
-    if (code) {
-      content = code
-    }
-
-    const bufContent = Buffer.from(content, 'utf-8'),
-      gz = gzipSync(bufContent),
-      br = brotliCompressSync(bufContent)
-
-    writeFileSync(name, content, 'UTF-8')
-    writeFileSync(`${name}.br`, br, 'UTF-8')
-    writeFileSync(`${name}.gz`, gz, 'UTF-8')
-  }
-}
-
 async function main({ compiler, moduleTarget }: BuildConfig) {
   const start = performance.now()
   // Clear old files
@@ -122,7 +95,9 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
   makeSecureKeys(SECURE_SERVER_KEYS, 'localhost')
 
   // Bundle with rollup
-  compileFrontEnd()
+  spawn.sync('yarn', [`${IS_PRODUCTION ? 'prod' : 'dev'}:rollup`], {
+    stdio: 'inherit'
+  })
 
   for (let { name } of walkSync(SOURCE_DIRECTORY, WALK_OPTS)) {
     let compiledCode, finalSourceMap
@@ -160,14 +135,16 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
 
     makeDirIfNonExistent(dirname(newName))
 
-    const { code, error } = minify(compiledCode)
+    if (IS_PRODUCTION) {
+      const { code, error } = minify(compiledCode)
 
-    if (error) {
-      throw error
-    }
+      if (error) {
+        throw error
+      }
 
-    if (code) {
-      compiledCode = code
+      if (code) {
+        compiledCode = code
+      }
     }
 
     writeFileSync(newName, compiledCode, 'UTF-8')

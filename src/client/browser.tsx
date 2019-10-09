@@ -1,5 +1,4 @@
 import { h, hydrate, options } from 'preact'
-import 'preact/debug'
 
 import { App } from './App'
 

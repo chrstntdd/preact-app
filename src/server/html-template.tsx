@@ -1,11 +1,21 @@
-import { readFileSync } from 'fs'
-
-import { CLIENT_LIB } from '../paths'
-
 const createScriptTag = (src: string) =>
-  `<script type="module" src="${src}"></script>`
+  `<script type="module" async defer src="${src}"></script>`
 
-const makeHeader = () => {
+const makeHeader = ({ modulepreload, browserSupportsModulePreload }) => {
+  let preloadTags: string[] | string = []
+
+  for (let mod of modulepreload.main) {
+    if (browserSupportsModulePreload) {
+      preloadTags.push(`<link rel="modulepreload" href="${mod}" />`)
+    } else {
+      preloadTags.push(
+        `<link rel="preload" as="script" crossorigin="anonymous" href="${mod}" />`
+      )
+    }
+  }
+
+  preloadTags = preloadTags.join('')
+
   return `<!DOCTYPE html>
   <html>
     <head>
@@ -36,18 +46,15 @@ const makeHeader = () => {
           color: #444;
         }
       </style>
+      ${preloadTags}
     </head>
     <body>
       <div id="root">`
 }
 
-let MANIFEST
-
-const makeFooter = () => {
-  MANIFEST =
-    MANIFEST || JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
+const makeFooter = ({ manifest }) => {
   return `</div>
-    ${createScriptTag(MANIFEST.main)}
+    ${createScriptTag(manifest.main)}
     </body>
   </html>
   `

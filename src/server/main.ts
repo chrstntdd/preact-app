@@ -7,6 +7,7 @@ import Logger from 'koa-logger'
 import Static from 'koa-static'
 import KoaRouter from 'koa-router'
 import Helmet from 'koa-helmet'
+import uaParser from 'ua-parser-js'
 
 import { CLIENT_LIB, SECURE_SERVER_KEYS } from '../paths'
 
@@ -24,13 +25,29 @@ const router = new KoaRouter<any, CustomContext>()
 const PORT = process.env.PORT || 3000,
   ENV = app.env
 
+let MANIFEST, PRELOAD_MANIFEST
+
 router.get('/(.*)', ({ request, res }) => {
   try {
+    MANIFEST =
+      MANIFEST ||
+      JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
+    PRELOAD_MANIFEST =
+      PRELOAD_MANIFEST ||
+      JSON.parse(readFileSync(`${CLIENT_LIB}/modulepreload.json`, 'UTF-8'))
+    const ua = uaParser(request.headers['user-agent'])
+
+    const templateData = {
+      manifest: MANIFEST,
+      modulepreload: PRELOAD_MANIFEST,
+      browserSupportsModulePreload: ua.engine.name === 'Blink'
+    }
+
     res.stream.respond({ ':status': 200 })
 
-    res.stream.write(makeHeader())
+    res.stream.write(makeHeader(templateData))
     res.stream.write(renderAppToString(request.path))
-    res.stream.end(makeFooter())
+    res.stream.end(makeFooter(templateData))
   } catch (error) {
     throw error
   }
