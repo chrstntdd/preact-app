@@ -39,7 +39,8 @@ const mainBabelConfig = require('./.babelrc.js')
 
 const BROWSER_ENTRY = resolve(__dirname, './src/client/browser.tsx')
 
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development',
+  IS_PRODUCTION = process.env.NODE_ENV === 'production'
 
 const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs']
 const EXTERNALS = ['react', 'react-dom']
@@ -148,7 +149,11 @@ const moduleConfig = {
     chunkFileNames: '[name]-[hash].mjs'
     // dynamicImportFunction: '__import__'
   },
-  plugins: [...basePlugins(), modulepreloadPlugin(), compressionPlugin()],
+  plugins: [
+    ...basePlugins(),
+    modulepreloadPlugin(),
+    IS_PRODUCTION && compressionPlugin()
+  ].filter(Boolean),
   manualChunks(id) {
     if (id.includes('node_modules')) {
       // The directory name following the last `node_modules`.
@@ -194,7 +199,10 @@ const nomoduleConfig = {
       react: 'React'
     }
   },
-  plugins: [...basePlugins({ nomodule: true }), compressionPlugin()],
+  plugins: [
+    ...basePlugins({ nomodule: true }),
+    IS_PRODUCTION && compressionPlugin()
+  ].filter(Boolean),
   external: EXTERNALS,
   inlineDynamicImports: true,
   watch: {
@@ -204,7 +212,7 @@ const nomoduleConfig = {
 
 const configs = [moduleConfig]
 
-if (process.env.NODE_ENV === 'production') {
+if (IS_PRODUCTION) {
   configs.push(nomoduleConfig)
 }
 
