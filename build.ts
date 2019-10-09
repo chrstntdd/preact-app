@@ -1,7 +1,7 @@
 import { dirname, relative, resolve } from 'path'
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
-import { brotliCompressSync, gzipSync } from 'zlib'
 import { performance } from 'perf_hooks'
+import { SpawnOptions } from 'child_process'
 
 import spawn from 'cross-spawn'
 import { minify } from 'terser'
@@ -36,7 +36,8 @@ const SOURCE_EXT = /\.(ts|mjs)x?$/,
     compiler: 'sucrase',
     moduleTarget: 'cjs'
   },
-  IS_PRODUCTION = process.env.NODE_ENV === 'production'
+  IS_PRODUCTION = process.env.NODE_ENV === 'production',
+  SPAWN_OPTS: SpawnOptions = { stdio: 'inherit' }
 
 let makePathRelative = (path: string) => relative(process.cwd(), path)
 
@@ -55,27 +56,29 @@ let makeSecureKeys = (dirWithKeys: string, name: string) => {
     if (!existsSync(resolve(dirWithKeys, fileName))) {
       mkdirSync(dirWithKeys, { recursive: true })
       console.log(`🔑  Writing new ${fileName}`)
+
       spawn.sync(
         'openssl',
         ['genrsa', '-out', './keys/localhost.key', '2048'],
-        {
-          stdio: 'inherit'
-        }
+        SPAWN_OPTS
       )
-      spawn.sync('openssl', [
-        'req',
-        '-new',
-        '-x509',
-        '-key',
-        './keys/localhost.key',
-        '-out',
-        './keys/localhost.crt',
-        '-days',
-        '3650',
-        '-subj',
-        '/CN=locahost'
-      ]),
-        { stdio: 'inherit' }
+      spawn.sync(
+        'openssl',
+        [
+          'req',
+          '-new',
+          '-x509',
+          '-key',
+          './keys/localhost.key',
+          '-out',
+          './keys/localhost.crt',
+          '-days',
+          '3650',
+          '-subj',
+          '/CN=locahost'
+        ],
+        SPAWN_OPTS
+      )
     } else {
       console.log(
         "✅  Looks like you've already got some self signed keys and certs there, champ"
