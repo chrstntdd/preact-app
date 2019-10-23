@@ -11,7 +11,7 @@ import uaParser from 'ua-parser-js'
 
 import { CLIENT_LIB, SECURE_SERVER_KEYS } from '../paths'
 
-import { makeHeader, makeFooter } from './html-template'
+import { makeDocumentHead, makeFooter } from './html-template'
 import { renderAppToString } from './render-app'
 import { createShutdownMiddleware } from './graceful-shutdown-middleware'
 
@@ -37,16 +37,21 @@ router.get('/(.*)', ({ request, res }) => {
       JSON.parse(readFileSync(`${CLIENT_LIB}/modulepreload.json`, 'UTF-8'))
     const ua = uaParser(request.headers['user-agent'])
 
+    const { app, headTags } = renderAppToString(request.path)
+
     const templateData = {
       manifest: MANIFEST,
       modulepreload: PRELOAD_MANIFEST,
-      browserSupportsModulePreload: ua.engine.name === 'Blink'
+      browserSupportsModulePreload: ua.engine.name === 'Blink',
+      headTags
     }
+
+    const header = makeDocumentHead(templateData)
 
     res.stream.respond({ ':status': 200 })
 
-    res.stream.write(makeHeader(templateData))
-    res.stream.write(renderAppToString(request.path))
+    res.stream.write(header)
+    res.stream.write(app)
     res.stream.end(makeFooter(templateData))
   } catch (error) {
     throw error

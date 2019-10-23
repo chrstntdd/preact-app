@@ -744,10 +744,10 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@chrstntdd/common@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@chrstntdd/common/-/common-0.0.1.tgz#e366d37f3526824af22952ee05ba23ee96f1b162"
-  integrity sha512-VWbatuCJlaqlZYdLzWNh1LSkomO+YktshKCvnXWqPLNhVT14cMaf88V2TiWRcUe4The7X1w5tzdVPxxW6WHHEQ==
+"@chrstntdd/common@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@chrstntdd/common/-/common-0.0.2.tgz#479d23b7fd0b15717a3f614d793fa43b242a13fe"
+  integrity sha512-UJtik8FK8Gr9LrMumgG+WCraWC0QgC9YeqNEd3TcnBhERVDqZJMcMDgn0/g18tbWz7G2vvxQfLv6wC7WswGlFQ==
 
 "@chrstntdd/node@^0.0.3":
   version "0.0.3"

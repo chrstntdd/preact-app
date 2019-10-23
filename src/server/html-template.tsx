@@ -1,20 +1,20 @@
 const createScriptTag = (src: string) =>
   `<script type="module" async defer src="${src}"></script>`
 
-const makeHeader = ({ modulepreload, browserSupportsModulePreload }) => {
-  let preloadTags: string[] | string = []
+const makeDocumentHead = ({
+  modulepreload,
+  browserSupportsModulePreload,
+  headTags = ''
+}) => {
+  let preloadTags = ''
 
   for (let mod of modulepreload.main) {
     if (browserSupportsModulePreload) {
-      preloadTags.push(`<link rel="modulepreload" href="${mod}" />`)
+      preloadTags += `<link rel="modulepreload" href="${mod}" />`
     } else {
-      preloadTags.push(
-        `<link rel="preload" as="script" crossorigin="anonymous" href="${mod}" />`
-      )
+      preloadTags += `<link rel="preload" as="script" crossorigin="anonymous" href="${mod}" />`
     }
   }
-
-  preloadTags = preloadTags.join('')
 
   return `<!DOCTYPE html>
   <html>
@@ -22,7 +22,6 @@ const makeHeader = ({ modulepreload, browserSupportsModulePreload }) => {
       <meta charset="utf-8" />
       <link rel="icon" href="data:,">
       <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-      <title>SSR!</title>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <style>
         *,
@@ -46,6 +45,7 @@ const makeHeader = ({ modulepreload, browserSupportsModulePreload }) => {
           color: #444;
         }
       </style>
+      ${headTags}
       ${preloadTags}
     </head>
     <body>
@@ -60,4 +60,4 @@ const makeFooter = ({ manifest }) => {
   `
 }
 
-export { makeHeader, makeFooter }
+export { makeDocumentHead, makeFooter }

@@ -31,7 +31,7 @@
     "@babel/plugin-transform-react-jsx": "^7.3.0",
     "@babel/preset-env": "^7.6.3",
     "@babel/preset-typescript": "^7.6.0",
-    "@chrstntdd/common": "^0.0.1",
+    "@chrstntdd/common": "^0.0.2",
     "@chrstntdd/node": "^0.0.3",
     "@types/babel__core": "^7.1.3",
     "@types/cross-spawn": "^6.0.1",
