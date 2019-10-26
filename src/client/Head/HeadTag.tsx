@@ -1,4 +1,4 @@
-import { h, Component, FunctionComponent } from 'preact'
+import { h, FunctionComponent } from 'preact'
 import { useEffect, useState, useRef, useContext } from 'preact/hooks'
 import { createPortal } from 'preact/compat'
 
@@ -22,7 +22,12 @@ type Props = {
   property?: string
 }
 
-const HeadTag = ({ as: As, name, property, ...rest }: Props) => {
+const HeadTag: FunctionComponent<Props> = ({
+  as: As,
+  name,
+  property,
+  ...rest
+}) => {
   const [canUseDOM, setCanUseDOM] = useState(false)
   const headTags = useContext(HeadContext)
   const indexRef = useRef(-1)
@@ -38,16 +43,16 @@ const HeadTag = ({ as: As, name, property, ...rest }: Props) => {
     }
   }, [])
 
+  const derivedProps = { ...rest, property, name }
+
   if (canUseDOM) {
     if (!headTags.shouldRenderTag(As, indexRef.current)) return null
 
-    // @ts-ignore
-    const ClientComp = <As {...rest} />
+    const ClientComp = h(As, derivedProps)
     return createPortal(ClientComp, document.head)
   }
 
-  // @ts-ignore
-  const ServerComp = <As data-rh="" {...rest} />
+  const ServerComp = h(As, { ...derivedProps, ['data-rh']: '' })
   headTags.addServerTag(ServerComp)
   return null
 }

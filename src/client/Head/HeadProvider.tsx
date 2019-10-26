@@ -64,7 +64,6 @@ class HeadProvider extends Component<Props, State> {
       if (cascadingTags.includes(tagNode.type as string)) {
         const index = headTags.findIndex(prev => {
           const prevName = prev.props.name || prev.props.property,
-            // @ts-ignore
             nextName = tagNode.props.name || tagNode.props.property
 
           return prev.type === tagNode.type && prevName === nextName
@@ -78,11 +77,11 @@ class HeadProvider extends Component<Props, State> {
   }
 
   componentDidMount() {
-    const ssrTags = document.head.querySelectorAll(`[data-rh=""]`)
-    // `forEach` on `NodeList` is not supported in Googlebot, so use a workaround
-    Array.prototype.forEach.call(ssrTags, ssrTag =>
+    for (let ssrTag of document.head.querySelectorAll<HTMLElement>(
+      `[data-rh=""]`
+    )) {
       ssrTag.parentNode.removeChild(ssrTag)
-    )
+    }
   }
 
   render({ headTags, children }) {
