@@ -1,3 +1,7 @@
+import jsesc from 'jsesc'
+
+import { CLIENT_SSR_HYDRATE_KEY } from '../constants'
+
 const createScriptTag = (src: string) =>
   `<script type="module" async defer src="${src}"></script>`
 
@@ -52,9 +56,19 @@ const makeDocumentHead = ({
       <div id="root">`
 }
 
-const makeFooter = ({ manifest }) => {
+const JSESC_OPTS = {
+  json: true,
+  isScriptContext: true,
+  wrap: true
+}
+
+const makeFooter = ({ manifest, initialClientState }) => {
   return `</div>
     ${createScriptTag(manifest.main)}
+    <script id="${CLIENT_SSR_HYDRATE_KEY}">window.${CLIENT_SSR_HYDRATE_KEY}=${jsesc(
+    JSON.stringify(initialClientState),
+    JSESC_OPTS
+  )}</script>
     </body>
   </html>
   `

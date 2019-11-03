@@ -36,13 +36,17 @@ router.get('/(.*)', ({ request, res }) => {
     const PRELOAD_MANIFEST = getManifest(`${CLIENT_LIB}/modulepreload.json`)
     const ua = uaParser(request.headers['user-agent'])
 
-    const { app, headTags } = renderAppToString(request.path)
+    const { app, headTags, initialClientState } = renderAppToString(
+      request.path,
+      { ua }
+    )
 
     const templateData = {
       manifest: MANIFEST,
       modulepreload: PRELOAD_MANIFEST,
       browserSupportsModulePreload: ua.engine.name === 'Blink',
-      headTags
+      headTags,
+      initialClientState
     }
 
     const header = makeDocumentHead(templateData)

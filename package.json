@@ -14,6 +14,7 @@
   "dependencies": {
     "@chrstntdd/browser": "^0.0.2",
     "esm": "^3.2.25",
+    "jsesc": "^2.5.2",
     "koa": "^2.11.0",
     "koa-helmet": "^5.1.0",
     "koa-logger": "^3.2.1",
@@ -23,7 +24,6 @@
     "preact-render-to-string": "^5.1.1",
     "terser": "^4.3.9",
     "ua-parser-js": "^0.7.20",
-    "unistore": "^3.5.0",
     "wouter-preact": "^2.3.1"
   },
   "devDependencies": {
