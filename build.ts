@@ -1,10 +1,11 @@
-import { dirname, relative, resolve } from 'path'
+import { dirname, relative, resolve, basename } from 'path'
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
 import { performance } from 'perf_hooks'
 import { SpawnOptions } from 'child_process'
 
+import { rollup, RollupOptions, OutputOptions } from 'rollup'
 import spawn from 'cross-spawn'
-import { minify } from 'terser'
+import terser from 'terser'
 import { transformSync } from '@babel/core'
 import { walkSync, emptyDirSync, WalkOptions } from '@chrstntdd/node'
 import { transform, Transform } from 'sucrase'
@@ -15,12 +16,19 @@ import {
   SECURE_SERVER_KEYS,
   SOURCE_DIRECTORY
 } from './src/paths'
+import { memoize } from './src/server/util'
 
 import mainBabelConfig from './.babelrc'
+import mainRollupConfig from './rollup.config'
 
 type Compiler = 'sucrase' | 'babel'
 
-type BuildConfig = { compiler: Compiler; moduleTarget: 'esm' | 'cjs' }
+type BuildConfig = {
+  compiler: Compiler
+  minify?: boolean
+  moduleTarget: 'esm' | 'cjs'
+  moduleAlias?: Record<string, string>
+}
 
 const SOURCE_EXT = /\.(ts|mjs)x?$/,
   BLANK_LINES_REGEXP = /^\s*$(?:\r\n?|\n)/gm,
@@ -34,7 +42,10 @@ const SOURCE_EXT = /\.(ts|mjs)x?$/,
   },
   DEFAULT_CONFIG: BuildConfig = {
     compiler: 'sucrase',
-    moduleTarget: 'cjs'
+    moduleTarget: 'cjs',
+    moduleAlias: {
+      'src/': SOURCE_DIRECTORY
+    }
   },
   IS_PRODUCTION = process.env.NODE_ENV === 'production',
   SPAWN_OPTS: SpawnOptions = { stdio: 'inherit' }
@@ -87,7 +98,13 @@ let makeSecureKeys = (dirWithKeys: string, name: string) => {
   })
 }
 
-async function main({ compiler, moduleTarget }: BuildConfig) {
+async function main({
+  compiler,
+  moduleTarget,
+  minify = false,
+  moduleAlias
+}: BuildConfig) {
+  const isEsm = moduleTarget === 'esm'
   const start = performance.now()
   // Clear old files
   await Promise.all([
@@ -97,30 +114,33 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
 
   makeSecureKeys(SECURE_SERVER_KEYS, 'localhost')
 
-  // Bundle with rollup
-  spawn.sync('yarn', [`${IS_PRODUCTION ? 'prod' : 'dev'}:rollup`], {
-    stdio: 'inherit'
-  })
+  buildWithRollup()
 
   for (let { name } of walkSync(SOURCE_DIRECTORY, WALK_OPTS)) {
     let compiledCode, finalSourceMap
-
-    const isEsm = moduleTarget === 'esm'
-    const content = readFileSync(name, 'UTF-8')
+    let fileContents: Buffer | string = readFileSync(name, 'UTF-8')
     const newName = name
       .replace('src', 'build')
       .replace(SOURCE_EXT, `.${isEsm ? 'm' : ''}js`)
 
+    // TODO: implement reliable path alias transforms
+    if (basename(name).includes('main.ts')) {
+      fileContents = transformImportStatements(fileContents, {
+        moduleAlias,
+        name
+      })
+    }
+
     if (compiler === 'babel') {
-      const { code, map } = transformSync(content, {
+      const { code, map } = transformSync(fileContents, {
         ...mainBabelConfig,
         filename: name
       })
       compiledCode = code
-      finalSourceMap = map.mappings
+      finalSourceMap = map
     } else {
       // Default to sucrase
-      const { code, sourceMap } = transform(content, {
+      const { code, sourceMap } = transform(fileContents, {
         jsxPragma: 'h',
         jsxFragmentPragma: 'Fragment',
         filePath: name,
@@ -132,14 +152,15 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
           Boolean
         ) as Transform[]
       })
+
       compiledCode = code.replace(BLANK_LINES_REGEXP, '')
-      finalSourceMap = sourceMap.mappings
+      finalSourceMap = sourceMap
     }
 
     makeDirIfNonExistent(dirname(newName))
 
-    if (IS_PRODUCTION) {
-      const { code, error } = minify(compiledCode)
+    if (minify) {
+      const { code, error } = terser.minify(compiledCode)
 
       if (error) {
         throw error
@@ -165,6 +186,102 @@ async function main({ compiler, moduleTarget }: BuildConfig) {
     `\n🤑  All built. Took ${((end - start) / 1000).toFixed(3)} seconds.\n`
   )
 }
+
+function buildWithRollup() {
+  mainRollupConfig.forEach(async build => {
+    try {
+      const bundle = await rollup({ ...build, output: void 0 } as RollupOptions)
+
+      const outputOptions = build.output as OutputOptions
+
+      await bundle.generate(outputOptions)
+
+      await bundle.write(outputOptions)
+    } catch (error) {
+      console.log('🍣  Encountered an error bundling with rollup')
+      throw error
+    }
+  })
+}
+
+/**
+ * Parses ES6 module import statements
+ * - Used for aliasing for now
+ */
+function transformImportStatements(
+  fileContents: string,
+  { moduleAlias, name }
+): string {
+  let importEntries: Map<string, any> | undefined
+  const lines = fileContents.split('\n')
+
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    const lineContent = lines[lineNumber]
+    const hasImportKeyword = lineContent.startsWith('import ')
+    const terminatedWithSemiColon = lineContent.endsWith(';')
+    const lastChar = lineContent[lineContent.length - 1]
+
+    // TODO: look into being able to parse multiple import statements on the same line
+    // We currently assume that the input will not be minified tho.
+    if (
+      // Standard JS with semicolons in the authored source
+      (hasImportKeyword && terminatedWithSemiColon) ||
+      // For cool kids who do not need semicolons
+      (hasImportKeyword && /'|"/.test(lastChar))
+    ) {
+      // Initialize
+      if (!importEntries) {
+        importEntries = new Map()
+      }
+
+      importEntries.set(lineContent, { lineNumber, end: lineContent.length })
+    }
+
+    // Started to parse non-imports
+    if (lineContent.trim() && !hasImportKeyword) {
+      break
+    }
+  }
+
+  let transformedInput = fileContents
+  const mappings = Object.keys(moduleAlias)
+
+  if (importEntries) {
+    for (let [originalLine] of importEntries) {
+      const importPath: string = getImportPath(originalLine)
+
+      // This is so brittle but works in the single use case right now
+      for (let i = 0; i < mappings.length; i++) {
+        const aliasedPath = mappings[i]
+
+        if (importPath.includes(aliasedPath)) {
+          // make import relative to current file
+          const aliasVal = moduleAlias[aliasedPath]
+          const relativePath = relative(dirname(name), aliasVal)
+          const remappedImport = originalLine.replace(
+            aliasedPath,
+            `${relativePath}/`
+          )
+          // Final transformation
+          transformedInput = transformedInput.replace(
+            originalLine,
+            remappedImport
+          )
+        }
+      }
+    }
+  }
+
+  return transformedInput
+}
+
+const getImportPath = memoize(function getImportPath(
+  importLine: string
+): string {
+  return importLine
+    .slice(importLine.indexOf('from') + 4, importLine.length)
+    .trim()
+})
 
 process.on('uncaughtException', e => {
   console.error(e)

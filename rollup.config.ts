@@ -1,4 +1,3 @@
-import Rollup from 'rollup'
 import path, { resolve } from 'path'
 import { brotliCompressSync, gzipSync } from 'zlib'
 
@@ -8,7 +7,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import nodeResolve from 'rollup-plugin-node-resolve'
 import replace from 'rollup-plugin-replace'
 import { terser } from 'rollup-plugin-terser'
-import progress from 'rollup-plugin-progress'
+import alias from 'rollup-plugin-alias'
 
 function compressionPlugin() {
   return {
@@ -38,11 +37,12 @@ function compressionPlugin() {
 const mainBabelConfig = require('./.babelrc.js')
 
 const BROWSER_ENTRY = resolve(__dirname, './src/client/browser.tsx')
+const OUT_DIR = resolve(__dirname, 'lib')
 
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development',
-  IS_PRODUCTION = process.env.NODE_ENV === 'production'
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 
-const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs']
+const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.node', '.json']
 const EXTERNALS = ['react', 'react-dom']
 
 // NOTE: this value must be defined outside of the plugin because it needs
@@ -106,24 +106,27 @@ function modulepreloadPlugin() {
 }
 
 function basePlugins({ nomodule = false } = {}) {
+  const node_mod = resolve(__dirname, 'node_modules')
   const plugins = [
-    progress({
-      clearLine: false
-    }),
-    nodeResolve({ extensions }),
-    commonjs({
-      include: ['node_modules/**']
-    }),
-    babel({
-      extensions,
-      exclude: /node_modules/,
-      presets: mainBabelConfig.presets,
-      plugins: mainBabelConfig.plugins
-    }),
     replace({
       'process.env.NODE_ENV': IS_DEVELOPMENT
         ? JSON.stringify('development')
         : JSON.stringify('production')
+    }),
+    alias({
+      resolve: ['.jsx', '.js', '.ts', '.tsx'],
+      entries: {
+        react: node_mod + '/preact/compat/dist/compat.js',
+        'react-dom': node_mod + '/preact/compat/dist/compat.js'
+      }
+    }),
+    nodeResolve({ extensions }),
+    commonjs({ include: [node_mod + '/**'] }),
+    babel({
+      extensions,
+      // exclude: /node_modules/,
+      presets: mainBabelConfig.presets,
+      plugins: mainBabelConfig.plugins
     }),
     manifestPlugin()
   ]
@@ -143,7 +146,7 @@ const moduleConfig = {
     ...(IS_DEVELOPMENT && { 'preact-devtools': 'preact/debug' })
   },
   output: {
-    dir: './lib',
+    dir: OUT_DIR,
     format: 'esm',
     entryFileNames: '[name]-[hash].mjs',
     chunkFileNames: '[name]-[hash].mjs'
@@ -191,7 +194,7 @@ const nomoduleConfig = {
     nomodule: BROWSER_ENTRY
   },
   output: {
-    dir: './lib',
+    dir: OUT_DIR,
     format: 'iife',
     entryFileNames: '[name]-[hash].js',
     name: 'nomodule.js',

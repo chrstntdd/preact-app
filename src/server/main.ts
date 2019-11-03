@@ -9,11 +9,12 @@ import KoaRouter from 'koa-router'
 import Helmet from 'koa-helmet'
 import uaParser from 'ua-parser-js'
 
-import { CLIENT_LIB, SECURE_SERVER_KEYS } from '../paths'
+import { CLIENT_LIB, SECURE_SERVER_KEYS } from 'src/paths'
 
 import { makeDocumentHead, makeFooter } from './html-template'
 import { renderAppToString } from './render-app'
 import { createShutdownMiddleware } from './graceful-shutdown-middleware'
+import { memoize } from './util'
 
 interface CustomContext {
   res: h2.Http2ServerResponse
@@ -22,19 +23,17 @@ interface CustomContext {
 const app = new Koa<any, CustomContext>()
 const router = new KoaRouter<any, CustomContext>()
 
-const PORT = process.env.PORT || 3000,
-  ENV = app.env
+const PORT = process.env.PORT || 3000
+const ENV = app.env
 
-let MANIFEST, PRELOAD_MANIFEST
+const getManifest = memoize((path: string) =>
+  JSON.parse(readFileSync(path, 'UTF-8'))
+)
 
 router.get('/(.*)', ({ request, res }) => {
   try {
-    MANIFEST =
-      MANIFEST ||
-      JSON.parse(readFileSync(`${CLIENT_LIB}/manifest.json`, 'UTF-8'))
-    PRELOAD_MANIFEST =
-      PRELOAD_MANIFEST ||
-      JSON.parse(readFileSync(`${CLIENT_LIB}/modulepreload.json`, 'UTF-8'))
+    const MANIFEST = getManifest(`${CLIENT_LIB}/manifest.json`)
+    const PRELOAD_MANIFEST = getManifest(`${CLIENT_LIB}/modulepreload.json`)
     const ua = uaParser(request.headers['user-agent'])
 
     const { app, headTags } = renderAppToString(request.path)
