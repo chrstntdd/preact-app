@@ -118,7 +118,7 @@ async function main({
 
   for (let { name } of walkSync(SOURCE_DIRECTORY, WALK_OPTS)) {
     let compiledCode, finalSourceMap
-    let fileContents: Buffer | string = readFileSync(name, 'UTF-8')
+    let fileContents = readFileSync(name, 'UTF-8')
     const newName = name
       .replace('src', 'build')
       .replace(SOURCE_EXT, `.${isEsm ? 'm' : ''}js`)
