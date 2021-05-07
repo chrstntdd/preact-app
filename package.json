@@ -25,7 +25,7 @@
     "preact": "^10.0.0",
     "preact-render-to-string": "^5.0.6",
     "terser": "^4.3.8",
-    "ua-parser-js": "^0.7.20",
+    "ua-parser-js": "^0.7.24",
     "wouter-preact": "^2.2.1"
   },
   "devDependencies": {
