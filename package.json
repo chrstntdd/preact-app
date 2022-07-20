@@ -24,7 +24,7 @@
     "postinstall-postinstall": "^2.0.0",
     "preact": "^10.0.0",
     "preact-render-to-string": "^5.0.6",
-    "terser": "^4.3.8",
+    "terser": "^4.8.1",
     "ua-parser-js": "^0.7.20",
     "wouter-preact": "^2.2.1"
   },
